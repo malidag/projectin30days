@@ -45,3 +45,24 @@ def create_external_df():
                         "label": -1  # Bilinmeyen etiket
                     })
         return pd.DataFrame(data)
+
+
+# Dataset Sınıfı
+class ExternalDataset(Dataset):
+    def __init__(self, df):
+        self.df = df
+        self.transform = A.Compose([
+            A.Resize(240, 240),
+            A.Normalize(mean=[0.485], std=[0.229]),
+            ToTensorV2()
+        ])
+
+    def __len__(self): return len(self.df)
+    
+    def __getitem__(self, idx):
+        img_path = self.df.iloc[idx]['path']
+        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        img = np.stack([img]*3, axis=-1)
+        img = self.transform(image=img)['image']
+        label = self.df.iloc[idx]['label'] if 'label' in self.df.columns else -1
+        return img, torch.tensor([label], dtype=torch.float32)
