@@ -66,3 +66,11 @@ class ExternalDataset(Dataset):
         img = self.transform(image=img)['image']
         label = self.df.iloc[idx]['label'] if 'label' in self.df.columns else -1
         return img, torch.tensor([label], dtype=torch.float32)
+
+# Grad-CAM Sınıfı
+class GradCAM:
+    def __init__(self, model, target_layer):
+        self.model = model
+        self.target_layer = target_layer
+        self.activations = None
+        self.gradients = None
