@@ -67,6 +67,9 @@ class ExternalDataset(Dataset):
         label = self.df.iloc[idx]['label'] if 'label' in self.df.columns else -1
         return img, torch.tensor([label], dtype=torch.float32)
 
+
+
+
 # Grad-CAM Sınıfı
 class GradCAM:
     def __init__(self, model, target_layer):
@@ -74,3 +77,25 @@ class GradCAM:
         self.target_layer = target_layer
         self.activations = None
         self.gradients = None
+        
+        self.target_layer.register_forward_hook(self.save_activations)
+        self.target_layer.register_backward_hook(self.save_gradients)
+    
+    def save_activations(self, module, input, output):
+        self.activations = output.detach()
+    
+    def save_gradients(self, module, grad_input, grad_output):
+        self.gradients = grad_output[0].detach()
+    
+    def get_cam(self, input_tensor):
+        self.model.eval()
+        output = self.model(input_tensor)
+        output.backward(retain_graph=True)
+        
+        weights = F.adaptive_avg_pool2d(self.gradients, 1)
+        cam = torch.mul(self.activations, weights).sum(dim=1, keepdim=True)
+        cam = F.relu(cam)
+        cam = F.interpolate(cam, (240,240), mode='bilinear', align_corners=False)
+        cam = cam - cam.min()
+        cam = cam / cam.max()
+        return cam.squeeze().cpu().numpy()        
