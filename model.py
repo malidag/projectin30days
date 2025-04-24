@@ -99,3 +99,14 @@ class GradCAM:
         cam = cam - cam.min()
         cam = cam / cam.max()
         return cam.squeeze().cpu().numpy()        
+
+
+
+# Model Yükleme
+def load_model():
+    model = EfficientNet.from_pretrained('efficientnet-b1')
+    model._fc = nn.Sequential(
+        nn.Dropout(0.5),
+        nn.Linear(1280, 1))
+    model.load_state_dict(torch.load('D:/TEKNOFEST/BTmakinesiEFFNET-V2S/best_model.pth', map_location=DEVICE))
+    return model.to(DEVICE)
