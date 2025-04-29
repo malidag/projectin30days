@@ -110,3 +110,30 @@ def load_model():
         nn.Linear(1280, 1))
     model.load_state_dict(torch.load('D:/TEKNOFEST/BTmakinesiEFFNET-V2S/best_model.pth', map_location=DEVICE))
     return model.to(DEVICE)
+
+
+# Görselleştirme Fonksiyonu
+def visualize_gradcam(image, cam, pred, true_label=None, save_path=None):
+    image = image.squeeze().permute(1,2,0).numpy()[:,:,0]
+    image = (image * 0.229 + 0.485) * 255  # Unnormalize
+    image = np.uint8(np.clip(image, 0, 255))
+    
+    cam = cv2.resize(cam, (240,240))
+    heatmap = cv2.applyColorMap(np.uint8(255*cam), cv2.COLORMAP_JET)
+    combined = cv2.addWeighted(cv2.cvtColor(image, cv2.COLOR_GRAY2BGR), 0.5, heatmap, 0.5, 0)
+    
+    plt.figure(figsize=(10,5))
+    plt.subplot(121)
+    plt.imshow(image, cmap='gray')
+    plt.title("Original")
+    
+    plt.subplot(122)
+    plt.imshow(combined)
+    title = f"Pred: {'Stroke' if pred>0.5 else 'Normal'}"
+    if true_label is not None:
+        title += f" | True: {'Stroke' if true_label==1 else 'Normal'}"
+    plt.title(title)
+    
+    if save_path:
+        plt.imsave(save_path, combined)
+    plt.close()
